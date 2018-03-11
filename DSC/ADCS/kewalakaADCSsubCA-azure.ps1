@@ -2,7 +2,7 @@
 
 $resourceGroupName = 'kewalakasqlvms'
 $automationAccountName = 'kewalakasqlvms'
-$DSCconfigurationName = 'kewalakaADCSrootCA'
+$DSCconfigurationName = 'kewalakaADCSsubCA'
 
 $DSCFolder = '.'
 . $DSCFolder\$DSCconfigurationName.ps1
@@ -21,22 +21,18 @@ $ConfigData = @{
         },
 
         @{
-            Nodename = "root-CA"
-            Role = "Root CA for Windows ADCS (PKI)"
-            SiteName = "SouthEastAsia"
-            InstallRSATTools = $true
-            CACommonName = "kewalaka.nz Root CA"
+            Nodename = "subca0"
+            Role = "Issuing CA for Windows ADCS (PKI)"
+            DomainName = "kewalaka.nz"
+            DCName = 'addc0'
+            PSDscAllowDomainUser = $True
+            InstallRSATTools = $True
+            CACommonName = "kewalaka.nz Issuing CA"
             CADistinguishedNameSuffix = "DC=kewalaka,DC=nz"
-            CRLPublicationURLs = "1:C:\Windows\system32\CertSrv\CertEnroll\%3%8%9.crl\n10:\n2:ldap:///CN=%7%8,CN=%2,CN=CDP,CN=Public Key Services,CN=Services,%6%10http://pki.kewalaka.nz/CertEnroll/%3%8%9.crl"
-            CACertPublicationURLs = "1:C:\Windows\system32\CertSrv\CertEnroll\%1_%3%4.crt\n2:ldap:///CN=%7,CN=AIA,CN=Public Key Services,CN=Services,%6%11\n2:http://pki.kewalaka.nz/CertEnroll/%1_%3%4.crt"
-            CRLPeriodUnits = 52
-            CRLPeriod = 'Weeks'
-            CRLOverlapUnits = 12
-            CRLOverlapPeriod = 'Hours'
-            ValidityPeriodUnits = 10
-            ValidityPeriod = 'Years'
-            AuditFilter = 127
-            SubCAs = @('subca0')            
+            CRLPublicationURLs = "65:C:\Windows\system32\CertSrv\CertEnroll\%3%8%9.crl\n79:ldap:///CN=%7%8,CN=%2,CN=CDP,CN=Public Key Services,CN=Services,%6%10\n6:http://pki.labbuilder.com/CertEnroll/%3%8%9.crl"
+            CACertPublicationURLs = "1:C:\Windows\system32\CertSrv\CertEnroll\%1_%3%4.crt\n2:ldap:///CN=%7,CN=AIA,CN=Public Key Services,CN=Services,%6%11\n2:http://pki.labbuilder.com/CertEnroll/%1_%3%4.crt"
+            RootCAName = "root-CA"
+            RootCACommonName = "kewalaka.nz Root CA"
         }
     )
 }
@@ -87,6 +83,11 @@ New-AutomationModule -moduleName 'xAdcsDeployment' -moduleURI 'https://devopsgal
                      -ResourceGroupName $resourceGroupName -AutomationAccountName $automationAccountName
 New-AutomationModule -moduleName 'xPSDesiredStateConfiguration' -moduleURI 'https://devopsgallerystorage.blob.core.windows.net/packages/xpsdesiredstateconfiguration.8.0.0.nupkg' `
                      -ResourceGroupName $resourceGroupName -AutomationAccountName $automationAccountName
+New-AutomationModule -moduleName 'xNetworking' -moduleURI 'https://devopsgallerystorage.blob.core.windows.net/packages/xnetworking.5.5.0.nupkg' `
+                     -ResourceGroupName $resourceGroupName -AutomationAccountName $automationAccountName
+New-AutomationModule -moduleName 'xComputerManagement' -moduleURI 'https://devopsgallerystorage.blob.core.windows.net/packages/xcomputermanagement.1.8.0.nupkg' `
+                     -ResourceGroupName $resourceGroupName -AutomationAccountName $automationAccountName
+
 
 function New-AutomationCredentials
 {
@@ -113,7 +114,8 @@ param (
 
 }
 
-New-AutomationCredentials -name "RootCAAdminCredential" -username "azureuser"
+New-AutomationCredentials -name "LocalAdminCredential" -username "azureuser"
+New-AutomationCredentials -name "DomainAdminCredential" -username "test\azureuser"
 
 #if ((Get-AzureRmAutomationDscConfiguration -ResourceGroupName $resourceGroupName -AutomationAccountName $automationAccountName -Name $DSCconfigurationName) -eq $null)
 #{
