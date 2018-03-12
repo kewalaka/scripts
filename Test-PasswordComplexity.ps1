@@ -61,3 +61,7 @@ Test-PasswordComplexity '© or Copyleft' # Fail - copyright sign not treated as 
 Test-PasswordComplexity 'We are in the £' # Fail - pound sign neither
 Test-PasswordComplexity "I 'quote' thee" # Pass - quotes are good
 Test-PasswordComplexity "I put a ] on the wall" # Pass - ] is good
+
+# failing example
+# fails because matches 'lower case' but should really pass as its a hebrew letter which is case insensitive .. Hmm..
+Test-PasswordComplexity 'ת is a letter without any case!'  # return false, should return true
